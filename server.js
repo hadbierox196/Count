@@ -1,240 +1,220 @@
-// server/index.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const { createGame, joinGame, startGame, processNumberSelection } = require('./game');
 
-// Create Express app
 const app = express();
 const server = http.createServer(app);
-
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Initialize Socket.IO
 const io = new Server(server);
 
-// Game rooms storage
-const gameRooms = {};
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Available player colors
-const PLAYER_COLORS = ['red', 'blue', 'green', 'yellow'];
+// Game state
+const rooms = {};
+const playerColors = ['red', 'blue', 'green', 'yellow'];
 
-// Socket.IO connection
 io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
-  
-  // Create a new game room
-  socket.on('createGame', () => {
+  console.log('A user connected:', socket.id);
+  let currentRoom = null;
+
+  socket.on('createRoom', () => {
     const roomId = generateRoomId();
-    gameRooms[roomId] = createGame();
-    
-    socket.join(roomId);
-    socket.emit('gameCreated', { roomId });
-    
-    // Assign player color
-    const playerColor = PLAYER_COLORS[0];
-    gameRooms[roomId].players[socket.id] = {
-      id: socket.id,
-      color: playerColor,
-      canSelectConsecutive: false,
-      lastSelected: null
+    rooms[roomId] = {
+      id: roomId,
+      players: [],
+      gameStarted: false,
+      sequence: [],
+      lastPlayerIndex: -1,
+      timer: 120,
+      timerInterval: null
     };
     
-    socket.emit('playerAssigned', { color: playerColor });
-    io.to(roomId).emit('updateLobby', { players: getPlayersInRoom(roomId) });
+    currentRoom = roomId;
+    joinRoom(socket, roomId);
     
-    socket.roomId = roomId;
-    console.log(`Game created: ${roomId}`);
+    socket.emit('roomCreated', roomId);
+    console.log(`Room created: ${roomId}`);
   });
-  
-  // Join an existing game room
-  socket.on('joinGame', (data) => {
-    const { roomId } = data;
-    
-    if (!gameRooms[roomId]) {
-      socket.emit('error', { message: 'Game room not found' });
+
+  socket.on('joinRoom', (roomId) => {
+    if (!rooms[roomId]) {
+      socket.emit('error', 'Room does not exist');
       return;
     }
     
-    if (Object.keys(gameRooms[roomId].players).length >= 4) {
-      socket.emit('error', { message: 'Game room is full' });
+    if (rooms[roomId].players.length >= 4) {
+      socket.emit('error', 'Room is full');
       return;
     }
     
-    socket.join(roomId);
+    if (rooms[roomId].gameStarted) {
+      socket.emit('error', 'Game already started');
+      return;
+    }
     
-    // Assign player color
-    const takenColors = Object.values(gameRooms[roomId].players).map(p => p.color);
-    const availableColors = PLAYER_COLORS.filter(color => !takenColors.includes(color));
-    const playerColor = availableColors[0];
-    
-    gameRooms[roomId].players[socket.id] = {
-      id: socket.id,
-      color: playerColor,
-      canSelectConsecutive: false,
-      lastSelected: null
-    };
-    
-    socket.emit('playerAssigned', { color: playerColor });
-    io.to(roomId).emit('updateLobby', { players: getPlayersInRoom(roomId) });
-    
-    socket.roomId = roomId;
-    console.log(`Player joined: ${roomId}`);
+    currentRoom = roomId;
+    joinRoom(socket, roomId);
   });
-  
-  // Start the game
+
   socket.on('startGame', () => {
-    const roomId = socket.roomId;
+    if (!currentRoom || !rooms[currentRoom]) return;
     
-    if (!roomId || !gameRooms[roomId]) {
-      socket.emit('error', { message: 'Game room not found' });
+    const room = rooms[currentRoom];
+    
+    if (room.players.length < 2) {
+      socket.emit('error', 'Need at least 2 players to start');
       return;
     }
     
-    const playerCount = Object.keys(gameRooms[roomId].players).length;
-    if (playerCount < 2) {
-      socket.emit('error', { message: 'Need at least 2 players to start' });
-      return;
-    }
+    if (room.gameStarted) return;
     
-    startGame(gameRooms[roomId]);
-    io.to(roomId).emit('gameStarted', { 
-      sequence: gameRooms[roomId].sequence,
-      timeLeft: gameRooms[roomId].timeLeft
-    });
+    room.gameStarted = true;
+    room.sequence = [];
     
-    // Start the game timer
-    gameRooms[roomId].timer = setInterval(() => {
-      gameRooms[roomId].timeLeft -= 1;
+    room.timerInterval = setInterval(() => {
+      room.timer--;
+      io.to(currentRoom).emit('updateTimer', room.timer);
       
-      io.to(roomId).emit('updateTimer', { timeLeft: gameRooms[roomId].timeLeft });
-      
-      if (gameRooms[roomId].timeLeft <= 0) {
-        clearInterval(gameRooms[roomId].timer);
-        io.to(roomId).emit('gameLost', { reason: 'Time expired' });
+      if (room.timer <= 0) {
+        clearInterval(room.timerInterval);
+        io.to(currentRoom).emit('gameLost', { reason: 'Time expired' });
+        resetRoom(currentRoom);
       }
     }, 1000);
+    
+    io.to(currentRoom).emit('gameStarted');
+    console.log(`Game started in room: ${currentRoom}`);
   });
-  
-  // Player selects a number
-  socket.on('selectNumber', (data) => {
-    const { number } = data;
-    const roomId = socket.roomId;
+
+  socket.on('selectNumber', (number) => {
+    if (!currentRoom || !rooms[currentRoom]) return;
     
-    if (!roomId || !gameRooms[roomId] || !gameRooms[roomId].active) {
-      socket.emit('error', { message: 'Game not active' });
+    const room = rooms[currentRoom];
+    if (!room.gameStarted) return;
+    
+    const playerIndex = room.players.findIndex(p => p.id === socket.id);
+    if (playerIndex === -1) return;
+    
+    if (room.lastPlayerIndex === playerIndex) {
+      socket.emit('error', 'You cannot play consecutive turns');
       return;
     }
     
-    const playerData = gameRooms[roomId].players[socket.id];
-    const gameState = gameRooms[roomId];
+    const nextExpectedNumber = room.sequence.length + 1;
     
-    // Check if the player can select consecutive numbers
-    if (playerData.lastSelected !== null && 
-        number === playerData.lastSelected + 1) {
-      socket.emit('error', { message: 'You cannot select consecutive numbers' });
-      return;
-    }
-    
-    // Check if number is already in sequence
-    if (gameState.sequence.includes(number)) {
-      socket.emit('error', { message: 'Number already selected' });
-      return;
-    }
-    
-    // Check if this is the next correct number in sequence
-    const expectedNumber = gameState.sequence.length + 1;
-    if (number !== expectedNumber) {
-      clearInterval(gameState.timer);
-      io.to(roomId).emit('gameLost', { 
-        reason: `Wrong sequence: expected ${expectedNumber}, got ${number}` 
+    if (parseInt(number) !== nextExpectedNumber) {
+      clearInterval(room.timerInterval);
+      io.to(currentRoom).emit('gameLost', { 
+        reason: 'Wrong number selected', 
+        expected: nextExpectedNumber, 
+        selected: number 
       });
+      resetRoom(currentRoom);
       return;
     }
     
-    // Generate random delay between 1-15 seconds
     const delay = Math.floor(Math.random() * 15) + 1;
-    socket.emit('processingSelection', { number, delay });
     
-    // Process the selection after delay
+    socket.emit('numberProcessing', { number, delay });
+    
+    socket.to(currentRoom).emit('playerSelectingNumber', { number });
+    
     setTimeout(() => {
-      processNumberSelection(gameState, socket.id, number);
+      if (!rooms[currentRoom] || !rooms[currentRoom].gameStarted) return;
       
-      // Update player's last selected number
-      playerData.lastSelected = number;
+      room.sequence.push(number);
+      room.lastPlayerIndex = playerIndex;
       
-      // Broadcast the updated sequence to all players
-      io.to(roomId).emit('updateSequence', { 
-        sequence: gameState.sequence,
-        selectedBy: socket.id,
-        playerColor: playerData.color
+      io.to(currentRoom).emit('sequenceUpdated', {
+        sequence: room.sequence,
+        selectedBy: room.players[playerIndex].color
       });
       
-      // Check if game is complete
-      if (gameState.sequence.length === 10) {
-        clearInterval(gameState.timer);
-        io.to(roomId).emit('gameWon');
+      if (room.sequence.length === 10) {
+        clearInterval(room.timerInterval);
+        io.to(currentRoom).emit('gameWon');
+        resetRoom(currentRoom);
       }
     }, delay * 1000);
   });
-  
-  // Player disconnects
+
   socket.on('disconnect', () => {
-    const roomId = socket.roomId;
+    console.log('User disconnected:', socket.id);
     
-    if (roomId && gameRooms[roomId]) {
-      // Remove player from the room
-      if (gameRooms[roomId].players[socket.id]) {
-        delete gameRooms[roomId].players[socket.id];
-      }
+    if (currentRoom && rooms[currentRoom]) {
+      const playerIndex = rooms[currentRoom].players.findIndex(p => p.id === socket.id);
       
-      // If room is empty, delete it
-      if (Object.keys(gameRooms[roomId].players).length === 0) {
-        if (gameRooms[roomId].timer) {
-          clearInterval(gameRooms[roomId].timer);
-        }
-        delete gameRooms[roomId];
-        console.log(`Room deleted: ${roomId}`);
-      } else {
-        // Update lobby for remaining players
-        io.to(roomId).emit('updateLobby', { players: getPlayersInRoom(roomId) });
+      if (playerIndex !== -1) {
+        rooms[currentRoom].players.splice(playerIndex, 1);
         
-        // If game is active and not enough players, end the game
-        if (gameRooms[roomId].active && Object.keys(gameRooms[roomId].players).length < 2) {
-          if (gameRooms[roomId].timer) {
-            clearInterval(gameRooms[roomId].timer);
-          }
-          io.to(roomId).emit('gameLost', { reason: 'Not enough players' });
-          gameRooms[roomId].active = false;
+        io.to(currentRoom).emit('playerLeft', {
+          playerId: socket.id,
+          players: rooms[currentRoom].players
+        });
+        
+        if (rooms[currentRoom].gameStarted) {
+          clearInterval(rooms[currentRoom].timerInterval);
+          io.to(currentRoom).emit('gameLost', { reason: 'A player disconnected' });
+          resetRoom(currentRoom);
+        }
+        
+        if (rooms[currentRoom].players.length === 0) {
+          delete rooms[currentRoom];
+          console.log(`Room deleted: ${currentRoom}`);
         }
       }
     }
-    
-    console.log(`User disconnected: ${socket.id}`);
   });
 });
 
-// Helper function to generate a room ID
+function joinRoom(socket, roomId) {
+  const room = rooms[roomId];
+  const playerColor = playerColors[room.players.length];
+  
+  const player = {
+    id: socket.id,
+    color: playerColor
+  };
+  
+  room.players.push(player);
+  socket.join(roomId);
+  
+  socket.emit('joinedRoom', {
+    roomId,
+    playerId: socket.id,
+    color: playerColor,
+    players: room.players
+  });
+  
+  socket.to(roomId).emit('playerJoined', {
+    playerId: socket.id,
+    color: playerColor,
+    players: room.players
+  });
+}
+
+function resetRoom(roomId) {
+  if (!rooms[roomId]) return;
+  
+  const room = rooms[roomId];
+  room.gameStarted = false;
+  room.sequence = [];
+  room.lastPlayerIndex = -1;
+  room.timer = 120;
+  
+  if (room.timerInterval) {
+    clearInterval(room.timerInterval);
+    room.timerInterval = null;
+  }
+}
+
 function generateRoomId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// Helper function to get players in a room
-function getPlayersInRoom(roomId) {
-  if (!gameRooms[roomId]) return [];
-  
-  return Object.values(gameRooms[roomId].players).map(player => ({
-    id: player.id,
-    color: player.color
-  }));
-}
-
-// Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
 
-module.exports = { app, server };
+module.exports = app;
