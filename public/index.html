@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Count - Multiplayer Number Sequence Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <!-- Title Page -->
+    <div id="title-page" class="page active">
+        <div class="container">
+            <h1>COUNT</h1>
+            <div class="buttons">
+                <button id="create-game-btn">Create Game</button>
+                <div class="join-game-container">
+                    <input type="text" id="room-code-input" placeholder="Enter Room Code">
+                    <button id="join-game-btn">Join Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lobby Page -->
+    <div id="lobby-page" class="page">
+        <div class="container">
+            <h2>Lobby</h2>
+            <div class="room-code">Room Code: <span id="room-code-display"></span></div>
+            <div class="players-container">
+                <h3>Players</h3>
+                <div id="players-list"></div>
+            </div>
+            <div class="buttons">
+                <button id="start-game-btn">Start Game</button>
+                <button id="leave-lobby-btn">Leave Lobby</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Page -->
+    <div id="game-page" class="page">
+        <div class="container">
+            <div class="game-header">
+                <div class="timer" id="game-timer">02:00</div>
+                <div class="sequence-container">
+                    <div class="sequence-title">Sequence</div>
+                    <div class="sequence" id="sequence-display"></div>
+                </div>
+            </div>
+            
+            <div class="game-content">
+                <div class="selection-display" id="selection-display">
+                    <div class="progress-circle-container">
+                        <svg class="progress-circle" width="200" height="200" viewBox="0 0 200 200">
+                            <circle class="progress-circle-bg" cx="100" cy="100" r="90" />
+                            <circle class="progress-circle-path" cx="100" cy="100" r="90" />
+                        </svg>
+                        <div class="progress-number" id="progress-number"></div>
+                    </div>
+                </div>
+                
+                <div class="number-buttons">
+                    <button class="number-btn" data-number="1">1</button>
+                    <button class="number-btn" data-number="2">2</button>
+                    <button class="number-btn" data-number="3">3</button>
+                    <button class="number-btn" data-number="4">4</button>
+                    <button class="number-btn" data-number="5">5</button>
+                    <button class="number-btn" data-number="6">6</button>
+                    <button class="number-btn" data-number="7">7</button>
+                    <button class="number-btn" data-number="8">8</button>
+                    <button class="number-btn" data-number="9">9</button>
+                    <button class="number-btn" data-number="10">10</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game End Page -->
+    <div id="game-end-page" class="page">
+        <div class="container">
+            <h2 id="game-result-title"></h2>
+            <p id="game-result-message"></p>
+            <div class="buttons">
+                <button id="play-again-btn">Play Again</button>
+                <button id="return-home-btn">Return to Home</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3>Error</h3>
+            <p id="error-message"></p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="scripts/client.js"></script>
+    <script src="scripts/game.js"></script>
+</body>
+</html>
