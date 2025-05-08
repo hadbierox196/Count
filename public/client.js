@@ -75,7 +75,6 @@ function updatePlayersList(players) {
     playersList.appendChild(playerItem);
   });
   
-  // Update the start button state
   if (players.length >= 2) {
     startButton.disabled = false;
   } else {
@@ -114,7 +113,6 @@ socket.on('gameStarted', () => {
   lobbyPage.classList.add('hidden');
   gamePage.classList.remove('hidden');
   
-  // Reset game state
   currentSequence = [];
   updateSequenceDisplay();
   resetNumberButtons();
@@ -135,7 +133,6 @@ socket.on('sequenceUpdated', (data) => {
     hideDelayIndicator();
   }
   
-  // Enable/disable buttons based on the new sequence
   updateNumberButtonsState();
 });
 
@@ -145,7 +142,6 @@ socket.on('numberProcessing', (data) => {
 });
 
 socket.on('playerSelectingNumber', (data) => {
-  // Someone else is selecting a number, disable that button for everyone
   const button = document.querySelector(`.number-btn[data-number="${data.number}"]`);
   if (button) {
     button.disabled = true;
