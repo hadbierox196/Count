@@ -1,106 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Count - Multiplayer Number Sequence Game</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="public/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Count - Multiplayer Number Sequence Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <main>
     <!-- Title Page -->
-    <div id="title-page" class="page active">
-        <div class="container">
-            <h1>COUNT</h1>
-            <div class="buttons">
-                <button id="create-game-btn">Create Game</button>
-                <div class="join-game-container">
-                    <input type="text" id="room-code-input" placeholder="Enter Room Code">
-                    <button id="join-game-btn">Join Game</button>
-                </div>
-            </div>
+    <section id="title-page" class="page" aria-label="Title Page">
+      <div class="container">
+        <h1 class="game-title">COUNT</h1>
+        <button id="play-button" class="btn" type="button">PLAY</button>
+        <div class="join-room">
+          <input type="text" id="room-id-input" placeholder="ROOM CODE" maxlength="6" aria-label="Room Code">
+          <button id="join-button" class="btn" type="button">JOIN</button>
         </div>
-    </div>
+      </div>
+    </section>
 
     <!-- Lobby Page -->
-    <div id="lobby-page" class="page">
-        <div class="container">
-            <h2>Lobby</h2>
-            <div class="room-code">Room Code: <span id="room-code-display"></span></div>
-            <div class="players-container">
-                <h3>Players</h3>
-                <div id="players-list"></div>
-            </div>
-            <div class="buttons">
-                <button id="start-game-btn">Start Game</button>
-                <button id="leave-lobby-btn">Leave Lobby</button>
-            </div>
+    <section id="lobby-page" class="page hidden" aria-label="Lobby Page">
+      <div class="container">
+        <h2>LOBBY</h2>
+        <div class="room-code">ROOM CODE: <span id="room-code"></span></div>
+
+        <div class="players-container">
+          <h3>PLAYERS</h3>
+          <ul id="players-list" aria-live="polite"></ul>
         </div>
-    </div>
+
+        <button id="start-button" class="btn" type="button">START GAME</button>
+        <p class="lobby-info">Need 2-4 players to start</p>
+      </div>
+    </section>
 
     <!-- Game Page -->
-    <div id="game-page" class="page">
-        <div class="container">
-            <div class="game-header">
-                <div class="timer" id="game-timer">02:00</div>
-                <div class="sequence-container">
-                    <div class="sequence-title">Sequence</div>
-                    <div class="sequence" id="sequence-display"></div>
-                </div>
-            </div>
-            
-            <div class="game-content">
-                <div class="selection-display" id="selection-display">
-                    <div class="progress-circle-container">
-                        <svg class="progress-circle" width="200" height="200" viewBox="0 0 200 200">
-                            <circle class="progress-circle-bg" cx="100" cy="100" r="90" />
-                            <circle class="progress-circle-path" cx="100" cy="100" r="90" />
-                        </svg>
-                        <div class="progress-number" id="progress-number"></div>
-                    </div>
-                </div>
-                
-                <div class="number-buttons">
-                    <button class="number-btn" data-number="1">1</button>
-                    <button class="number-btn" data-number="2">2</button>
-                    <button class="number-btn" data-number="3">3</button>
-                    <button class="number-btn" data-number="4">4</button>
-                    <button class="number-btn" data-number="5">5</button>
-                    <button class="number-btn" data-number="6">6</button>
-                    <button class="number-btn" data-number="7">7</button>
-                    <button class="number-btn" data-number="8">8</button>
-                    <button class="number-btn" data-number="9">9</button>
-                    <button class="number-btn" data-number="10">10</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <section id="game-page" class="page hidden" aria-label="Game Page">
+      <div class="container">
+        <header class="game-header">
+          <div class="timer-container">
+            <div id="timer" aria-live="polite">2:00</div>
+          </div>
+        </header>
 
-    <!-- Game End Page -->
-    <div id="game-end-page" class="page">
-        <div class="container">
-            <h2 id="game-result-title"></h2>
-            <p id="game-result-message"></p>
-            <div class="buttons">
-                <button id="play-again-btn">Play Again</button>
-                <button id="return-home-btn">Return to Home</button>
-            </div>
+        <div class="sequence-container">
+          <h3>SEQUENCE</h3>
+          <div id="sequence" class="sequence"></div>
         </div>
+
+        <div id="delay-indicator" class="hidden" aria-hidden="true">
+          <div class="circle-progress">
+            <svg width="150" height="150" viewBox="0 0 150 150" role="img" aria-label="Progress Circle">
+              <circle class="progress-background" cx="75" cy="75" r="65" />
+              <circle id="progress-circle" class="progress-circle" cx="75" cy="75" r="65" />
+            </svg>
+            <div class="progress-number" id="progress-number"></div>
+          </div>
+        </div>
+
+        <div class="number-buttons">
+          ${[...Array(10)].map((_, i) => `<button class="number-btn" type="button" data-number="${i + 1}">${i + 1}</button>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- Result Modal -->
+    <div id="result-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="result-title" aria-describedby="result-message">
+      <div class="modal-content">
+        <h2 id="result-title"></h2>
+        <p id="result-message"></p>
+        <button id="return-to-lobby" class="btn" type="button">RETURN TO LOBBY</button>
+      </div>
     </div>
 
     <!-- Error Modal -->
-    <div id="error-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h3>Error</h3>
-            <p id="error-message"></p>
-        </div>
+    <div id="error-modal" class="modal hidden" role="alertdialog" aria-modal="true" aria-labelledby="error-title" aria-describedby="error-message">
+      <div class="modal-content">
+        <h2 id="error-title">ERROR</h2>
+        <p id="error-message"></p>
+        <button id="close-error" class="btn" type="button">OK</button>
+      </div>
     </div>
+  </main>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="scripts/client.js"></script>
-    <script src="scripts/game.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>
