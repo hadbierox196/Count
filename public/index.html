@@ -8,83 +8,85 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main>
-    <!-- Title Page -->
-    <section id="title-page" class="page" aria-label="Title Page">
-      <div class="container">
-        <h1 class="game-title">COUNT</h1>
-        <button id="play-button" class="btn" type="button">PLAY</button>
-        <div class="join-room">
-          <input type="text" id="room-id-input" placeholder="ROOM CODE" maxlength="6" aria-label="Room Code">
-          <button id="join-button" class="btn" type="button">JOIN</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Lobby Page -->
-    <section id="lobby-page" class="page hidden" aria-label="Lobby Page">
-      <div class="container">
-        <h2>LOBBY</h2>
-        <div class="room-code">ROOM CODE: <span id="room-code"></span></div>
-
-        <div class="players-container">
-          <h3>PLAYERS</h3>
-          <ul id="players-list" aria-live="polite"></ul>
-        </div>
-
-        <button id="start-button" class="btn" type="button">START GAME</button>
-        <p class="lobby-info">Need 2-4 players to start</p>
-      </div>
-    </section>
-
-    <!-- Game Page -->
-    <section id="game-page" class="page hidden" aria-label="Game Page">
-      <div class="container">
-        <header class="game-header">
-          <div class="timer-container">
-            <div id="timer" aria-live="polite">2:00</div>
-          </div>
-        </header>
-
-        <div class="sequence-container">
-          <h3>SEQUENCE</h3>
-          <div id="sequence" class="sequence"></div>
-        </div>
-
-        <div id="delay-indicator" class="hidden" aria-hidden="true">
-          <div class="circle-progress">
-            <svg width="150" height="150" viewBox="0 0 150 150" role="img" aria-label="Progress Circle">
-              <circle class="progress-background" cx="75" cy="75" r="65" />
-              <circle id="progress-circle" class="progress-circle" cx="75" cy="75" r="65" />
-            </svg>
-            <div class="progress-number" id="progress-number"></div>
-          </div>
-        </div>
-
-        <div class="number-buttons">
-          ${[...Array(10)].map((_, i) => `<button class="number-btn" type="button" data-number="${i + 1}">${i + 1}</button>`).join('')}
-        </div>
-      </div>
-    </section>
-
-    <!-- Result Modal -->
-    <div id="result-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="result-title" aria-describedby="result-message">
-      <div class="modal-content">
-        <h2 id="result-title"></h2>
-        <p id="result-message"></p>
-        <button id="return-to-lobby" class="btn" type="button">RETURN TO LOBBY</button>
+  <div id="title-page" class="page">
+    <div class="container">
+      <h1 class="game-title">COUNT</h1>
+      <button id="play-button" class="btn">PLAY</button>
+      <div class="join-room">
+        <input type="text" id="room-id-input" placeholder="ROOM CODE" maxlength="6">
+        <button id="join-button" class="btn">JOIN</button>
       </div>
     </div>
+  </div>
 
-    <!-- Error Modal -->
-    <div id="error-modal" class="modal hidden" role="alertdialog" aria-modal="true" aria-labelledby="error-title" aria-describedby="error-message">
-      <div class="modal-content">
-        <h2 id="error-title">ERROR</h2>
-        <p id="error-message"></p>
-        <button id="close-error" class="btn" type="button">OK</button>
+  <div id="lobby-page" class="page hidden">
+    <div class="container">
+      <h2>LOBBY</h2>
+      <div class="room-code">ROOM CODE: <span id="room-code"></span></div>
+      
+      <div class="players-container">
+        <h3>PLAYERS</h3>
+        <div id="players-list"></div>
+      </div>
+      
+      <button id="start-button" class="btn">START GAME</button>
+      <p class="lobby-info">Need 2-4 players to start</p>
+    </div>
+  </div>
+
+  <div id="game-page" class="page hidden">
+    <div class="container">
+      <div class="game-header">
+        <div class="timer-container">
+          <div id="timer">2:00</div>
+        </div>
+      </div>
+      
+      <div class="sequence-container">
+        <h3>SEQUENCE</h3>
+        <div id="sequence" class="sequence"></div>
+      </div>
+      
+      <div id="delay-indicator" class="hidden">
+        <div class="circle-progress">
+          <svg width="150" height="150" viewBox="0 0 150 150">
+            <circle class="progress-background" cx="75" cy="75" r="65" />
+            <circle id="progress-circle" class="progress-circle" cx="75" cy="75" r="65" />
+          </svg>
+          <div class="progress-number" id="progress-number"></div>
+        </div>
+      </div>
+      
+      <div class="number-buttons">
+        <button class="number-btn" data-number="1">1</button>
+        <button class="number-btn" data-number="2">2</button>
+        <button class="number-btn" data-number="3">3</button>
+        <button class="number-btn" data-number="4">4</button>
+        <button class="number-btn" data-number="5">5</button>
+        <button class="number-btn" data-number="6">6</button>
+        <button class="number-btn" data-number="7">7</button>
+        <button class="number-btn" data-number="8">8</button>
+        <button class="number-btn" data-number="9">9</button>
+        <button class="number-btn" data-number="10">10</button>
       </div>
     </div>
-  </main>
+  </div>
+
+  <div id="result-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="result-title"></h2>
+      <p id="result-message"></p>
+      <button id="return-to-lobby" class="btn">RETURN TO LOBBY</button>
+    </div>
+  </div>
+
+  <div id="error-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>ERROR</h2>
+      <p id="error-message"></p>
+      <button id="close-error" class="btn">OK</button>
+    </div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
